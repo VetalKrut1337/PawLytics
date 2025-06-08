@@ -1,5 +1,5 @@
 """
-URL configuration for PawLytics project.
+URL configuration for pawlytics project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
@@ -27,7 +27,7 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="PawLytics API",
+      title="pawlytics API",
       default_version='v1',
       description="Документація API для реєстрації, логіну, готелів і аналітики",
    ),
