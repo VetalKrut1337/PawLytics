@@ -17,3 +17,4 @@ class MyHotelView(APIView):
         return Response({
             "hotel": hotel.name if hotel else None
         })
+
