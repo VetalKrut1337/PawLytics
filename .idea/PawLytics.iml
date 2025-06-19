@@ -13,6 +13,7 @@
     </facet>
   </component>
   <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$/.github" />
     <content url="file://$MODULE_DIR$/backend" />
     <orderEntry type="jdk" jdkName="Python 3.13 virtualenv at C:\Users\lytse\Documents\PawLytics\backend\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
