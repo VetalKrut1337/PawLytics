@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('role', models.CharField(default='staff', max_length=50)),
-                ('hotel', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pawlytics.hotel')),
+                ('hotel', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='server.hotel')),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),

@@ -1,4 +1,4 @@
-from pawlytics.models import Hotel
+from server.models import Hotel
 from rest_framework import serializers
 
 

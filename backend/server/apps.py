@@ -2,7 +2,7 @@ from django.apps import AppConfig
 
 class PawlyticsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'pawlytics'
+    name = 'server'
 
     def ready(self):
-        import pawlytics.signals
+        import server.signals

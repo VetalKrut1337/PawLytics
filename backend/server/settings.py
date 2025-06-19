@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',  # Swagger
     'users',
-    'pawlytics',
+    'server',
     'corsheaders',
 ]
 
@@ -62,7 +62,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'pawlytics.urls'
+ROOT_URLCONF = 'server.urls'
 
 TEMPLATES = [
     {
@@ -80,7 +80,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'pawlytics.wsgi.application'
+WSGI_APPLICATION = 'server.wsgi.application'
 
 
 # Database
