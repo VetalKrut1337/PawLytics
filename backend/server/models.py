@@ -75,11 +75,38 @@ class PetOwner(models.Model):
 
 class Pet(models.Model):
     pet_type = models.ForeignKey(PetType, on_delete=models.PROTECT)
+    breed = models.ForeignKey('Breed', null=True, blank=True, on_delete=models.SET_NULL)
     pet_owner = models.ForeignKey(PetOwner, on_delete=models.PROTECT)
     birth_date = models.DateField()
     weight = models.DecimalField(max_digits=8, decimal_places=2)
     medical_notes = models.TextField()
-    medical_notes = models.TextField()
+
+
+class Breed(models.Model):
+    pet_type = models.ForeignKey(PetType, on_delete=models.PROTECT, related_name="breeds")
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.pet_type.name})"
+
+
+class FeedingLog(models.Model):
+    pet = models.ForeignKey(Pet, on_delete=models.PROTECT, related_name="feedings")
+    date = models.DateTimeField()
+    food_amount = models.DecimalField(max_digits=6, decimal_places=2)  # граммы
+
+    def __str__(self):
+        return f"{self.pet} — {self.food_amount}g on {self.date}"
+
+
+class RoomExpense(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="expenses")
+    date = models.DateTimeField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField()
+
+    def __str__(self):
+        return f"{self.room.number} — {self.amount} on {self.date}"
 
 
 class Booking(models.Model):

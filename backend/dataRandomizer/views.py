@@ -1,9 +1,8 @@
 import random
-from datetime import timedelta, date, datetime
+from datetime import timedelta, date
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from faker import Faker
 
 from server.models import (
@@ -25,70 +24,72 @@ class GenerateRandomDataView(APIView):
 
         # --- Rooms ---
         rooms = []
-        for i in range(5):
+        for i in range(10):  # більше кімнат
             room = Room.objects.create(
                 hotel=hotel,
                 number=f"{200 + i}",
-                capacity=random.randint(1, 3)
+                capacity=random.randint(1, 4)
             )
             rooms.append(room)
 
         # --- Staff ---
         staff_list = []
-        for _ in range(3):
+        for _ in range(8):  # більше персоналу
             staff = Staff.objects.create(
                 hotel=hotel,
                 name=fake.name(),
-                role=random.choice(['Caretaker', 'Cleaner', 'Trainer']),
+                role=random.choice(['Caretaker', 'Cleaner', 'Trainer', 'Vet']),
                 phone=fake.phone_number()
             )
             staff_list.append(staff)
 
         # --- Services ---
+        service_names = ['Grooming', 'Training', 'Vet Check', 'Walking', 'Feeding']
         services = []
-        for name in ['Grooming', 'Training', 'Vet Check']:
+        for name in service_names:
             service = Service.objects.create(
                 name=name,
                 description=fake.sentence(),
-                price=random.randint(50, 200)
+                price=random.randint(50, 300)
             )
             services.append(service)
 
-        # --- Service Usage ---
-        for _ in range(10):
+        # --- Service Usage (за 2 роки) ---
+        for _ in range(200):
             ServiceUsage.objects.create(
                 service=random.choice(services),
                 staff=random.choice(staff_list),
-                date=fake.date_this_year(),
+                date=fake.date_between(start_date='-2y', end_date='today'),
                 amount=random.randint(1, 5)
             )
 
         # --- Inventory ---
         inventory_items = []
-        for i in range(3):
+        for _ in range(10):
             inv = Inventory.objects.create(
                 hotel=hotel,
                 name=fake.word(),
-                category=random.choice(['Food', 'Toys', 'Medicine']),
-                quantity=random.randint(10, 50),
+                category=random.choice(['Food', 'Toys', 'Medicine', 'Bedding']),
+                quantity=random.randint(20, 100),
                 unit='pcs',
-                min_required=5
+                min_required=random.randint(5, 15)
             )
             inventory_items.append(inv)
 
-        # --- Purchases ---
-        for _ in range(3):
+        # --- Purchases (за 2 роки) ---
+        for _ in range(50):
+            purchase_date = fake.date_between(start_date='-2y', end_date='today')
             purchase = Purchase.objects.create(
                 hotel=hotel,
-                date=fake.date_this_year(),
+                date=purchase_date,
                 supplier=fake.company(),
-                total_cost=0  # Updated below
+                total_cost=0
             )
             total = 0
-            for _ in range(random.randint(1, 3)):
+            for _ in range(random.randint(1, 5)):
                 item = random.choice(inventory_items)
-                qty = random.randint(1, 10)
-                price = random.randint(5, 20)
+                qty = random.randint(1, 20)
+                price = random.randint(5, 50)
                 PurchaseItem.objects.create(
                     item=item,
                     purchase=purchase,
@@ -102,10 +103,11 @@ class GenerateRandomDataView(APIView):
         # --- Pet Types ---
         dog = PetType.objects.get_or_create(name='Dog')[0]
         cat = PetType.objects.get_or_create(name='Cat')[0]
+        rabbit = PetType.objects.get_or_create(name='Rabbit')[0]
 
         # --- Pet Owners ---
         owners = []
-        for _ in range(3):
+        for _ in range(20):
             owner = PetOwner.objects.create(
                 name=fake.name(),
                 phone=fake.phone_number(),
@@ -114,33 +116,34 @@ class GenerateRandomDataView(APIView):
             )
             owners.append(owner)
 
-        # --- Pets + Bookings + Payments ---
-        for _ in range(5):
+        # --- Pets + Bookings + Payments (за 2 роки) ---
+        for _ in range(100):
             pet = Pet.objects.create(
-                pet_type=random.choice([dog, cat]),
+                pet_type=random.choice([dog, cat, rabbit]),
                 pet_owner=random.choice(owners),
                 birth_date=fake.date_of_birth(minimum_age=1, maximum_age=12),
-                weight=random.uniform(2.0, 20.0),
+                weight=round(random.uniform(1.0, 40.0), 1),
                 medical_notes=fake.sentence()
             )
 
-            room = random.choice(rooms)
-            start_date = fake.date_between(start_date='-6M', end_date='today')
-            end_date = start_date + timedelta(days=random.randint(1, 7))
+            # Кілька бронювань за різні дати
+            for _ in range(random.randint(1, 4)):
+                start_date = fake.date_between(start_date='-2y', end_date='today')
+                end_date = start_date + timedelta(days=random.randint(1, 10))
 
-            booking = Booking.objects.create(
-                pet=pet,
-                room=room,
-                start_date=start_date,
-                end_date=end_date,
-                price=random.randint(100, 500)
-            )
+                booking = Booking.objects.create(
+                    pet=pet,
+                    room=random.choice(rooms),
+                    start_date=start_date,
+                    end_date=end_date,
+                    price=random.randint(100, 1000)
+                )
 
-            Payment.objects.create(
-                booking=booking,
-                amount=booking.price,
-                date=end_date,
-                payment_method=random.choice(['Cash', 'Card'])
-            )
+                Payment.objects.create(
+                    booking=booking,
+                    amount=booking.price,
+                    date=end_date,
+                    payment_method=random.choice(['Cash', 'Card', 'Online'])
+                )
 
-        return Response({"status": "OK", "message": "Дані успішно згенеровані"})
+        return Response({"status": "OK", "message": "Дані успішно згенеровані за 2 роки"})
