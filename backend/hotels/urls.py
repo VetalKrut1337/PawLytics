@@ -2,7 +2,7 @@ from django.urls import path
 from hotels.views import (
     CreateHotelView, RoomVisitsPerYearView, RoomProfitPerYearView,
     RoomExpensesPerYearView, VisitsBySpeciesView, AverageFoodBySpeciesView,
-    ComplexAnalyticsView
+    ComplexAnalyticsView, CombinedAnalyticsView
 )
 
 urlpatterns = [
@@ -13,4 +13,5 @@ urlpatterns = [
     path('visits-by-species/', VisitsBySpeciesView.as_view(), name='visits-by-species'),
     path('avg-food-by-species/', AverageFoodBySpeciesView.as_view(), name='avg-food-by-species'),
     path('complex-analytics/', ComplexAnalyticsView.as_view(), name='complex-analytics'),
+    path('combined-analytics/', CombinedAnalyticsView.as_view(), name='combined-analytics'),
 ]

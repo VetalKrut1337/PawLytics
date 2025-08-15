@@ -97,6 +97,8 @@ DATABASES = {
     }
 }
 
+SESSION_COOKIE_AGE = 60 * 60 * 24  # 1 день
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

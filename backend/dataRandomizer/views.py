@@ -7,7 +7,7 @@ from faker import Faker
 
 from server.models import (
     Room, Staff, Service, ServiceUsage, Inventory, Purchase, PurchaseItem,
-    PetType, PetOwner, Pet, Booking, Payment, UserProfile
+    PetType, PetOwner, Pet, Booking, Payment, UserProfile, Breed, FeedingLog, RoomExpense
 )
 
 fake = Faker()
@@ -146,4 +146,57 @@ class GenerateRandomDataView(APIView):
                     payment_method=random.choice(['Cash', 'Card', 'Online'])
                 )
 
+        # --- Breeds ---
+        breeds = []
+        for pet_type in [dog, cat, rabbit]:
+            for _ in range(3):  # по 3 породи на тип
+                breed = Breed.objects.create(
+                    name=fake.word().capitalize(),
+                    pet_type=pet_type
+                )
+                breeds.append(breed)
+
+        # --- Feeding Logs (за 2 года) ---
+        for pet in Pet.objects.all():
+            for _ in range(random.randint(5, 20)):  # несколько записей кормления на питомца
+                FeedingLog.objects.create(
+                    pet=pet,
+                    date=fake.date_time_between(start_date='-2y', end_date='now'),
+                    food_amount=round(random.uniform(50, 500), 2)  # граммы
+                )
+
+        # --- Room Expenses ---
+        for room in rooms:
+            for _ in range(random.randint(1, 5)):
+                RoomExpense.objects.create(
+                    room=room,
+                    date=fake.date_between(start_date='-1y', end_date='today'),
+                    description=fake.sentence(),
+                    amount=random.randint(100, 1000)
+                )
+
         return Response({"status": "OK", "message": "Дані успішно згенеровані за 2 роки"})
+
+
+class ClearRandomDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        # Удаляем в правильном порядке, чтобы не было конфликтов FK
+        Payment.objects.all().delete()
+        Booking.objects.all().delete()
+        Pet.objects.all().delete()
+        PetOwner.objects.all().delete()
+        Breed.objects.all().delete()
+        FeedingLog.objects.all().delete()
+        RoomExpense.objects.all().delete()
+        ServiceUsage.objects.all().delete()
+        Service.objects.all().delete()
+        Staff.objects.all().delete()
+        PurchaseItem.objects.all().delete()
+        Purchase.objects.all().delete()
+        Inventory.objects.all().delete()
+        Room.objects.all().delete()
+        PetType.objects.all().delete()
+
+        return Response({"status": "OK", "message": "Всі дані згенеровані раніше — видалено"})
