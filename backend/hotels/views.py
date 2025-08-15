@@ -11,7 +11,7 @@ from django.db.models import Sum, Avg, Count
 
 from hotels.serializers import HotelCreateSerializer
 from server.models import (
-    UserProfile, Hotel, Room, Booking, Pet, FeedingLog, RoomExpense
+    UserProfile, Hotel, Room, Booking, Pet, FeedingLog, RoomExpense, PetType
 )
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -28,6 +28,9 @@ class CreateHotelView(generics.CreateAPIView):
         profile = self.request.user.userprofile
         profile.hotel = hotel
         profile.save()
+
+
+ALL_MONTHS = [m for m in month_abbr if m]
 
 
 class RoomVisitsPerYearView(APIView):
@@ -63,7 +66,13 @@ class RoomVisitsPerYearView(APIView):
             month = month_abbr[booking.start_date.month]
             result[room_label][month] += 1
 
-        return Response({k: dict(v) for k, v in result.items()})
+        # 🔹 Добавляем пустые месяцы с нулями
+        final_result = {}
+        for room_label, months_data in result.items():
+            full_months = {m: months_data.get(m, 0) for m in ALL_MONTHS}
+            final_result[room_label] = full_months
+
+        return Response(final_result)
 
 
 class RoomProfitPerYearView(APIView):
@@ -112,6 +121,12 @@ class RoomProfitPerYearView(APIView):
         # Приводим к обычным dict, чтобы JSON сериализатор не ругался
         final_result = {room: {m: float(v) for m, v in months.items()} for room, months in result.items()}
 
+        # 🔹 Добавляем пустые месяцы с нулями
+        final_result = {}
+        for room_label, months_data in result.items():
+            full_months = {m: months_data.get(m, Decimal("0.00")) for m in ALL_MONTHS}
+            final_result[room_label] = full_months
+
         return Response(final_result)
 
 
@@ -153,6 +168,12 @@ class RoomExpensesPerYearView(APIView):
 
         # Преобразуем Decimal в float для корректного JSON
         final_result = {room: {m: float(v) for m, v in months.items()} for room, months in result.items()}
+
+        # 🔹 Добавляем пустые месяцы с нулями
+        final_result = {}
+        for room_label, months_data in result.items():
+            full_months = {m: months_data.get(m, Decimal("0.00")) for m in ALL_MONTHS}
+            final_result[room_label] = full_months
 
         return Response(final_result)
 
@@ -198,7 +219,13 @@ class VisitsBySpeciesView(APIView):
             species = booking.pet.pet_type.name
             result[species] += 1
 
-        return Response(result)
+        # 🔹 Добавляем виды с нулями, если у них не было посещений
+        all_species = set(booking.pet.pet_type.name for booking in bookings) | set(
+            Pet.objects.filter(booking__room__hotel=hotel).values_list("pet_type__name", flat=True)
+        )
+        final_result = {species: result.get(species, 0) for species in all_species}
+
+        return Response(final_result)
 
 
 class AverageFoodBySpeciesView(APIView):
@@ -250,7 +277,14 @@ class AverageFoodBySpeciesView(APIView):
         avg_result = {species: float(total_food[species] / count_food[species])
                       for species in total_food if count_food[species] > 0}
 
-        return Response(avg_result)
+        # 🔹 Добавляем виды с нулями, если у них нет кормлений
+        all_species = set(pet.pet_type.name for pet in pets)
+        final_result = {
+            species: float(total_food[species] / count_food[species]) if count_food[species] > 0 else 0.0
+            for species in all_species
+        }
+
+        return Response(final_result)
 
 
 class ComplexAnalyticsView(APIView):
@@ -355,6 +389,7 @@ class CombinedAnalyticsView(APIView):
         rooms = Room.objects.filter(hotel=hotel)
         bookings = Booking.objects.filter(room__in=rooms, start_date__year=year)
         expenses = RoomExpense.objects.filter(room__in=rooms, date__year=year)
+        all_species = list(PetType.objects.values_list("name", flat=True))
 
         result = {}
 
@@ -365,7 +400,11 @@ class CombinedAnalyticsView(APIView):
                 room_label = f"Room_{b.room.number}"
                 month = month_abbr[b.start_date.month]
                 room_visits[room_label][month] += 1
-            result["room_visits"] = {k: dict(v) for k, v in room_visits.items()}
+            final_result = {}
+            for room_label, months_data in room_visits.items():
+                full_months = {m: months_data.get(m, 0) for m in ALL_MONTHS}
+                final_result[room_label] = full_months
+            result["room_visits"] = final_result
 
         # --- Room Profit ---
         if "room_profit" in requested_metrics:
@@ -374,7 +413,11 @@ class CombinedAnalyticsView(APIView):
                 room_label = f"Room_{b.room.number}"
                 month = month_abbr[b.start_date.month]
                 room_profit[room_label][month] += Decimal(b.price)
-            result["room_profit"] = {k: {m: float(v) for m, v in months.items()} for k, months in room_profit.items()}
+            final_result = {}
+            for room_label, months_data in room_profit.items():
+                full_months = {m: float(months_data.get(m, 0)) for m in ALL_MONTHS}
+                final_result[room_label] = full_months
+            result["room_profit"] = final_result
 
         # --- Room Expenses ---
         if "room_expenses" in requested_metrics:
@@ -383,7 +426,11 @@ class CombinedAnalyticsView(APIView):
                 room_label = f"Room_{e.room.number}"
                 month = month_abbr[e.date.month]
                 room_exp[room_label][month] += e.amount
-            result["room_expenses"] = {k: {m: float(v) for m, v in months.items()} for k, months in room_exp.items()}
+            final_result = {}
+            for room_label, months_data in room_exp.items():
+                full_months = {m: float(months_data.get(m, 0)) for m in ALL_MONTHS}
+                final_result[room_label] = full_months
+            result["room_expenses"] = final_result
 
         # --- Visits by Species ---
         if "visits_by_species" in requested_metrics:
@@ -391,7 +438,8 @@ class CombinedAnalyticsView(APIView):
             for b in bookings.select_related("pet__pet_type"):
                 species_name = b.pet.pet_type.name
                 species_count[species_name] += 1
-            result["visits_by_species"] = dict(species_count)
+            final_result = {sp: species_count.get(sp, 0) for sp in all_species}
+            result["visits_by_species"] = final_result
 
         # --- Average Food ---
         if "avg_food" in requested_metrics:
@@ -403,8 +451,13 @@ class CombinedAnalyticsView(APIView):
                 species_name = f.pet.pet_type.name
                 total_food[species_name] += f.food_amount
                 count_food[species_name] += 1
-            avg_food = {sp: float(total_food[sp]/count_food[sp]) for sp in total_food if count_food[sp]>0}
-            result["avg_food"] = avg_food
+            final_result = {}
+            for sp in all_species:
+                if count_food[sp] > 0:
+                    final_result[sp] = float(total_food[sp] / count_food[sp])
+                else:
+                    final_result[sp] = 0.0
+            result["avg_food"] = final_result
 
         # --- Complex Analytics ---
         if "complex" in requested_metrics:
@@ -419,8 +472,8 @@ class CombinedAnalyticsView(APIView):
                 avg_food = feedings_in_room.aggregate(avg=Avg("food_amount"))["avg"] or 0
                 net_profit = profit - cost - (avg_food * visits * Decimal("0.01"))
                 complex_data[f"Room_{room.number}"] = {
-                    "profit": profit,
-                    "expenses": cost,
+                    "profit": float(profit),
+                    "expenses": float(cost),
                     "visits": visits,
                     "avg_food": float(avg_food),
                     "net_profit": float(net_profit)
